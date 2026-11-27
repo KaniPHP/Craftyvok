@@ -52,13 +52,17 @@ class DemoGiftSeeder extends Seeder
         ];
 
         foreach ($gifts as $gift) {
+            $imageUrl = '/img/'.rawurlencode($images[$gift['image']]);
+            $additionalImageUrl = '/img/'.rawurlencode($images[($gift['image'] + 1) % count($images)]);
+
             Gift::updateOrCreate(
                 ['name' => $gift['name']],
                 [
                     'category' => $gift['category'],
                     'description' => $gift['description'],
                     'price' => $gift['price'],
-                    'image_url' => '/img/'.rawurlencode($images[$gift['image']]),
+                    'image_url' => $imageUrl,
+                    'images' => [$imageUrl, $additionalImageUrl],
                     'is_active' => true,
                 ],
             );

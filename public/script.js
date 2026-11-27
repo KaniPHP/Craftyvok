@@ -21,6 +21,22 @@ if (menuToggle && primaryNav) {
 const year = document.querySelector("#year");
 if (year) year.textContent = String(new Date().getFullYear());
 
+document.querySelectorAll(".product-gallery").forEach((gallery) => {
+  const mainImage = gallery.querySelector("[data-gallery-main]");
+  if (!mainImage) return;
+
+  gallery.querySelectorAll("[data-gallery-image]").forEach((thumbnail) => {
+    thumbnail.addEventListener("click", () => {
+      mainImage.src = thumbnail.dataset.galleryImage;
+      mainImage.alt = thumbnail.dataset.galleryAlt || "";
+
+      gallery.querySelectorAll("[data-gallery-image]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button === thumbnail));
+      });
+    });
+  });
+});
+
 const searchToggle = document.querySelector(".search-toggle");
 const searchForm = document.querySelector("#site-search");
 const giftSearch = document.querySelector("#gift-search");

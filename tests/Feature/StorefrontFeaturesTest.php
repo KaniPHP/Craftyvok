@@ -12,8 +12,10 @@ use Database\Seeders\DemoGiftSeeder;
 use Database\Seeders\InstagramPhotoSeeder;
 use Database\Seeders\InstagramVideoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -91,20 +93,52 @@ class StorefrontFeaturesTest extends TestCase
         ])->assertJsonPath('messages.2.body', 'It is ₹1,499.');
     }
 
-    public function test_non_admin_cannot_open_admin_dashboard(): void
+    public function test_non_admin_cannot_open_admin_pages(): void
     {
         $this->actingAs(User::factory()->create(['is_admin' => false]))
             ->get('/admin')
             ->assertForbidden();
+
+        $this->get('/admin/gifts')
+            ->assertForbidden();
     }
 
-    public function test_admin_can_manage_gifts_from_the_dashboard(): void
+    public function test_admin_menu_items_render_on_separate_pages(): void
     {
         $this->actingAs(User::factory()->create(['is_admin' => true]))
             ->get('/admin')
             ->assertOk()
-            ->assertSee('Gift enquiry inbox')
-            ->assertSee('Add a gift item');
+            ->assertSee('Products by category')
+            ->assertSee(route('admin.gifts.index'), false)
+            ->assertSee(route('admin.orders.index'), false)
+            ->assertSee(route('admin.enquiries.index'), false)
+            ->assertSee(route('admin.channels.index'), false);
+
+        $this->get(route('admin.gifts.index'))
+            ->assertOk()
+            ->assertSee('All products')
+            ->assertSee('<table', false);
+
+        $this->get(route('admin.enquiries.index'))
+            ->assertOk()
+            ->assertSee('Gift enquiry inbox');
+
+        $this->get(route('admin.orders.index'))
+            ->assertOk()
+            ->assertSee('Customer orders');
+
+        $this->get(route('admin.channels.index'))
+            ->assertOk()
+            ->assertSee('Social channels');
+    }
+
+    public function test_admin_can_create_edit_search_and_delete_gifts_from_product_pages(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        $this->get(route('admin.gifts.create'))
+            ->assertOk()
+            ->assertSee('Add a gift');
 
         $this->post('/admin/gifts', [
             'name' => 'Personalised mug',
@@ -113,13 +147,57 @@ class StorefrontFeaturesTest extends TestCase
             'description' => 'Add a name or message',
             'image_url' => 'https://example.test/mug.jpg',
             'is_active' => '1',
-        ])->assertRedirect();
+        ])->assertRedirect(route('admin.gifts.index'));
+
+        $gift = Gift::query()->where('name', 'Personalised mug')->firstOrFail();
 
         $this->assertDatabaseHas('gifts', [
-            'name' => 'Personalised mug',
+            'id' => $gift->id,
             'category' => 'love',
             'price' => '499.00',
             'is_active' => 1,
+        ]);
+
+        $this->get(route('admin.gifts.index'))
+            ->assertOk()
+            ->assertSee('Personalised mug')
+            ->assertSee('href="'.route('admin.gifts.edit', $gift).'"', false);
+
+        Gift::create([
+            'name' => 'Corporate gift box',
+            'category' => 'corporate',
+            'is_active' => true,
+        ]);
+
+        $this->get(route('admin.gifts.index', ['search' => 'Personalised']))
+            ->assertOk()
+            ->assertSee('Personalised mug')
+            ->assertDontSee('Corporate gift box');
+
+        $this->get(route('admin.gifts.index', ['search' => 'Corporate Gifts']))
+            ->assertOk()
+            ->assertSee('Corporate gift box')
+            ->assertDontSee('Personalised mug');
+
+        $this->get(route('admin.gifts.edit', $gift))
+            ->assertOk()
+            ->assertSee('Edit gift')
+            ->assertSee('value="Personalised mug"', false);
+
+        $this->patch(route('admin.gifts.update', $gift), [
+            'name' => 'Personalised mug updated',
+            'category' => 'birthday',
+            'price' => '549.00',
+            'description' => 'Add a name or message',
+            'image_url' => 'https://example.test/mug.jpg',
+            'is_active' => '1',
+        ])->assertRedirect(route('admin.gifts.index'));
+
+        $this->assertDatabaseHas('gifts', [
+            'id' => $gift->id,
+            'name' => 'Personalised mug updated',
+            'category' => 'birthday',
+            'price' => '549.00',
         ]);
 
         $this->post('/admin/gifts', [
@@ -133,6 +211,134 @@ class StorefrontFeaturesTest extends TestCase
             'name' => 'Custom name board',
             'image_url' => '/img/WhatsApp%20Image%202026-09-09%20at%2011.44.52%20AM.jpeg',
         ]);
+
+        $this->delete(route('admin.gifts.destroy', $gift))
+            ->assertRedirect(route('admin.gifts.index'));
+
+        $this->assertDatabaseMissing('gifts', ['id' => $gift->id]);
+    }
+
+    public function test_admin_can_upload_and_remove_multiple_product_images(): void
+    {
+        Storage::fake('public');
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        $this->post(route('admin.gifts.store'), [
+            'name' => 'Photo Gift Box',
+            'category' => 'birthday',
+            'price' => '1299.00',
+            'images' => [
+                UploadedFile::fake()->image('gift-front.jpg'),
+                UploadedFile::fake()->image('gift-detail.jpg'),
+            ],
+            'is_active' => '1',
+        ])->assertRedirect(route('admin.gifts.index'));
+
+        $gift = Gift::query()->where('name', 'Photo Gift Box')->firstOrFail();
+        $this->assertCount(2, $gift->images);
+        foreach ($gift->images as $image) {
+            $this->assertStringStartsWith('/storage/gifts/', $image);
+            Storage::disk('public')->assertExists(Str::after($image, '/storage/'));
+        }
+
+        $this->get(route('admin.gifts.index'))
+            ->assertOk()
+            ->assertSee('2 photos');
+
+        $this->get(route('admin.gifts.edit', $gift))
+            ->assertOk()
+            ->assertSee('Photo Gift Box photo 1')
+            ->assertSee('Photo Gift Box photo 2');
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('₹1,299.00')
+            ->assertSee('product-gallery-thumbnails', false)
+            ->assertSee('data-gallery-image=', false)
+            ->assertSee('storage/gifts/', false);
+
+        $removedImage = $gift->images[0];
+        $remainingImage = $gift->images[1];
+        $this->patch(route('admin.gifts.update', $gift), [
+            'name' => $gift->name,
+            'category' => 'birthday',
+            'price' => '1299.00',
+            'remove_images' => [$removedImage],
+            'images' => [UploadedFile::fake()->image('gift-back.jpg')],
+            'is_active' => '1',
+        ])->assertRedirect(route('admin.gifts.index'));
+
+        $gift->refresh();
+        $this->assertCount(2, $gift->images);
+        $this->assertSame($remainingImage, $gift->images[0]);
+        Storage::disk('public')->assertMissing(Str::after($removedImage, '/storage/'));
+        Storage::disk('public')->assertExists(Str::after($gift->images[1], '/storage/'));
+
+        $this->delete(route('admin.gifts.destroy', $gift))
+            ->assertRedirect(route('admin.gifts.index'));
+
+        Storage::disk('public')->assertMissing([
+            Str::after($remainingImage, '/storage/'),
+            Str::after($gift->images[1], '/storage/'),
+        ]);
+    }
+
+    public function test_admin_rejects_non_image_product_uploads(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->post(route('admin.gifts.store'), [
+                'name' => 'Invalid upload',
+                'category' => 'occasions',
+                'images' => [UploadedFile::fake()->create('notes.txt', 1, 'text/plain')],
+            ])
+            ->assertSessionHasErrors([
+                'images.0' => 'The images.0 field must be an image.',
+            ]);
+
+        $this->assertDatabaseMissing('gifts', ['name' => 'Invalid upload']);
+        Storage::disk('public')->assertDirectoryEmpty('gifts');
+    }
+
+    public function test_admin_rejects_product_images_larger_than_five_megabytes(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->post(route('admin.gifts.store'), [
+                'name' => 'Oversized upload',
+                'category' => 'occasions',
+                'images' => [UploadedFile::fake()->image('large.jpg')->size(5121)],
+            ])
+            ->assertSessionHasErrors([
+                'images.0' => 'The images.0 field must not be greater than 5120 kilobytes.',
+            ]);
+
+        $this->assertDatabaseMissing('gifts', ['name' => 'Oversized upload']);
+        Storage::disk('public')->assertDirectoryEmpty('gifts');
+    }
+
+    public function test_admin_rejects_more_than_eight_product_images(): void
+    {
+        Storage::fake('public');
+        $images = [];
+        for ($index = 1; $index <= 9; $index++) {
+            $images[] = UploadedFile::fake()->image("gift-{$index}.jpg");
+        }
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->post(route('admin.gifts.store'), [
+                'name' => 'Too many images',
+                'category' => 'occasions',
+                'images' => $images,
+            ])
+            ->assertSessionHasErrors([
+                'images' => 'The images field must not have more than 8 items.',
+            ]);
+
+        $this->assertDatabaseMissing('gifts', ['name' => 'Too many images']);
+        Storage::disk('public')->assertDirectoryEmpty('gifts');
     }
 
     public function test_admin_rejects_image_paths_outside_the_local_image_folder(): void
@@ -321,6 +527,7 @@ class StorefrontFeaturesTest extends TestCase
             'name' => 'Love Note Gift Box',
             'image_url' => '/img/WhatsApp%20Image%202026-09-09%20at%2011.45.07%20AM%20%284%29.jpeg',
         ]);
+        $this->assertCount(2, Gift::where('name', 'Love Note Gift Box')->firstOrFail()->images);
 
         $this->get('/')
             ->assertOk()

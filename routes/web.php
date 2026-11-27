@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminGiftController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\HomeController;
@@ -33,9 +34,10 @@ Route::post('/admin/login', [AdminController::class, 'login'])->middleware('thro
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
-    Route::post('/gifts', [AdminController::class, 'createGift'])->name('gifts.create');
-    Route::patch('/gifts/{gift}', [AdminController::class, 'updateGift'])->name('gifts.update');
-    Route::delete('/gifts/{gift}', [AdminController::class, 'deleteGift'])->name('gifts.delete');
+    Route::get('/enquiries', [AdminController::class, 'enquiries'])->name('enquiries.index');
+    Route::get('/orders', [AdminController::class, 'orders'])->name('orders.index');
+    Route::get('/channels', [AdminController::class, 'channels'])->name('channels.index');
+    Route::resource('gifts', AdminGiftController::class)->except(['show']);
     Route::post('/conversations/{conversation}/messages', [AdminController::class, 'reply'])->name('chat.reply');
     Route::post('/orders', [AdminController::class, 'createOrder'])->name('orders.create');
     Route::patch('/orders/{order}', [AdminController::class, 'updateOrder'])->name('orders.update');

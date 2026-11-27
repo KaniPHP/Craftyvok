@@ -125,14 +125,27 @@
         </div>
         <div class="category-grid">
           @forelse($giftGroups->get($key, collect()) as $gift)
+            @php($giftImages = $gift->image_gallery)
             <article class="category-card collection-card {{ $category['card_class'] }}">
-              <div class="category-image">
-                @if($gift->image_url)
-                  <img src="{{ $gift->image_url }}" alt="{{ $gift->name }}" loading="lazy">
-                @else
-                  <div class="product-art" role="img" aria-label="Gift photo coming soon for {{ $gift->name }}"><span aria-hidden="true">🎁</span><span>Craftyvok</span></div>
+              <div class="product-gallery">
+                <div class="category-image">
+                  @if($giftImages !== [])
+                    <img src="{{ filter_var($giftImages[0], FILTER_VALIDATE_URL) ? $giftImages[0] : asset(ltrim($giftImages[0], '/')) }}" alt="{{ $gift->name }}" loading="lazy" data-gallery-main>
+                  @else
+                    <div class="product-art" role="img" aria-label="Gift photo coming soon for {{ $gift->name }}"><span aria-hidden="true">🎁</span><span>Craftyvok</span></div>
+                  @endif
+                  <span class="category-number">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                </div>
+                @if(count($giftImages) > 1)
+                  <div class="product-gallery-thumbnails" aria-label="Photos of {{ $gift->name }}">
+                    @foreach($giftImages as $image)
+                      @php($imageUrl = filter_var($image, FILTER_VALIDATE_URL) ? $image : asset(ltrim($image, '/')))
+                      <button type="button" class="product-gallery-thumbnail" data-gallery-image="{{ $imageUrl }}" data-gallery-alt="{{ $gift->name }} photo {{ $loop->iteration }}" aria-label="Show photo {{ $loop->iteration }} of {{ $gift->name }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">
+                        <img src="{{ $imageUrl }}" alt="" loading="lazy">
+                      </button>
+                    @endforeach
+                  </div>
                 @endif
-                <span class="category-number">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
               </div>
               <div class="category-info"><div><h3>{{ $gift->name }}</h3><p>{{ $gift->description ?: 'Thoughtfully made for you' }}</p></div></div>
               @if($gift->price !== null)<p class="gift-price">₹{{ number_format((float) $gift->price, 2) }}</p>@endif

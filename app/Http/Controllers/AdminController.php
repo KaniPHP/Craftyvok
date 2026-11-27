@@ -7,7 +7,6 @@ use App\Models\Gift;
 use App\Models\Order;
 use App\Models\SocialPost;
 use App\Models\User;
-use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,16 +45,70 @@ class AdminController extends Controller
 
     public function dashboard(): View
     {
+        $categoryCounts = Gift::query()
+            ->selectRaw('category, COUNT(*) as gift_count')
+            ->groupBy('category')
+            ->pluck('gift_count', 'category');
+        $totalGiftCount = $categoryCounts->sum();
+
         return view('admin.dashboard', [
+            'pageTitle' => 'Store dashboard',
+            'activePage' => 'overview',
+            'conversations' => ChatConversation::query()
+                ->with('messages')
+                ->latest('last_message_at')
+                ->take(4)
+                ->get(),
+            'gifts' => Gift::query()->latest()->take(5)->get(),
+            'videoCount' => SocialPost::query()->where('is_highlight', false)->count(),
+            'highlightCount' => SocialPost::query()->where('is_highlight', true)->count(),
+            'categories' => collect(Gift::CATEGORIES)->map(function (string $label, string $category) use ($categoryCounts, $totalGiftCount): array {
+                $count = (int) $categoryCounts->get($category, 0);
+
+                return [
+                    'key' => $category,
+                    'label' => $label,
+                    'count' => $count,
+                    'percentage' => $totalGiftCount > 0 ? (int) round($count / $totalGiftCount * 100) : 0,
+                ];
+            }),
+            'totalGiftCount' => $totalGiftCount,
+            'orderCount' => Order::query()->count(),
+            'conversationCount' => ChatConversation::query()->count(),
+        ]);
+    }
+
+    public function enquiries(): View
+    {
+        return view('admin.enquiries', [
+            'pageTitle' => 'Gift enquiry inbox',
+            'activePage' => 'enquiries',
             'conversations' => ChatConversation::query()
                 ->with('messages')
                 ->latest('last_message_at')
                 ->take(50)
                 ->get(),
-            'gifts' => Gift::query()->latest()->get(),
-            'videoCount' => SocialPost::query()->where('is_highlight', false)->count(),
-            'highlightCount' => SocialPost::query()->where('is_highlight', true)->count(),
+        ]);
+    }
+
+    public function orders(): View
+    {
+        return view('admin.orders', [
+            'pageTitle' => 'Customer orders',
+            'activePage' => 'orders',
             'orders' => Order::query()->with('user')->latest()->take(50)->get(),
+            'orderCount' => Order::query()->count(),
+        ]);
+    }
+
+    public function channels(): View
+    {
+        return view('admin.channels', [
+            'pageTitle' => 'Social channels',
+            'activePage' => 'channels',
+            'videoCount' => SocialPost::query()->where('is_highlight', false)->whereIn('media_type', ['VIDEO', 'REELS'])->count(),
+            'photoCount' => SocialPost::query()->where('is_highlight', false)->where('media_type', 'IMAGE')->count(),
+            'highlightCount' => SocialPost::query()->where('is_highlight', true)->count(),
         ]);
     }
 
@@ -90,31 +143,6 @@ class AdminController extends Controller
         return back()->with('status', 'Order tracking information updated.');
     }
 
-    public function createGift(Request $request): RedirectResponse
-    {
-        $data = $this->validatedGift($request);
-        $data['is_active'] = $request->boolean('is_active');
-        Gift::create($data);
-
-        return back()->with('status', 'Gift added to the storefront.');
-    }
-
-    public function updateGift(Request $request, Gift $gift): RedirectResponse
-    {
-        $data = $this->validatedGift($request);
-        $data['is_active'] = $request->boolean('is_active');
-        $gift->update($data);
-
-        return back()->with('status', 'Gift updated.');
-    }
-
-    public function deleteGift(Gift $gift): RedirectResponse
-    {
-        $gift->delete();
-
-        return back()->with('status', 'Gift removed from the storefront.');
-    }
-
     public function reply(Request $request, ChatConversation $conversation): RedirectResponse
     {
         $data = $request->validate([
@@ -140,42 +168,5 @@ class AdminController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('admin.login');
-    }
-
-    private function validatedGift(Request $request): array
-    {
-        return $request->validate([
-            'name' => ['required', 'string', 'max:160'],
-            'category' => ['required', 'in:love,birthday,occasions,relationship,corporate,greetings'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'image_url' => [
-                'nullable',
-                'string',
-                'max:2048',
-                function (string $attribute, mixed $value, Closure $fail): void {
-                    if (! is_string($value) || $value === '') {
-                        return;
-                    }
-
-                    $isLocalImage = preg_match('/\A\/img\/[A-Za-z0-9._() %\-]+\z/', $value) === 1;
-                    if ($isLocalImage) {
-                        $localPath = rawurldecode(ltrim($value, '/'));
-
-                        if (! str_contains($localPath, '..') && is_file(public_path($localPath))) {
-                            return;
-                        }
-                    }
-
-                    $scheme = parse_url($value, PHP_URL_SCHEME);
-                    $isHttpUrl = filter_var($value, FILTER_VALIDATE_URL) !== false
-                        && in_array($scheme, ['http', 'https'], true);
-
-                    if (! $isHttpUrl) {
-                        $fail('The image must be an HTTP(S) URL or an existing image path under /img/.');
-                    }
-                },
-            ],
-        ]);
     }
 }
