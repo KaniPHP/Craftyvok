@@ -10,6 +10,12 @@ class HomeController extends Controller
 {
     public function __invoke(): View
     {
+        $gifts = Gift::query()->where('is_active', true)->orderBy('id')->get();
+        $portfolioPhotos = $gifts
+            ->filter(fn (Gift $gift): bool => str_starts_with((string) $gift->image_url, '/img/'))
+            ->unique('image_url')
+            ->values();
+
         $giftCategories = [
             'love' => [
                 'label' => 'Love',
@@ -56,14 +62,22 @@ class HomeController extends Controller
         ];
 
         return view('welcome', [
-            'giftGroups' => Gift::query()->where('is_active', true)->orderBy('id')->get()->groupBy('category'),
+            'giftGroups' => $gifts->groupBy('category'),
+            'portfolioPhotos' => $portfolioPhotos,
             'giftCategories' => $giftCategories,
+            'photos' => SocialPost::query()
+                ->where('is_highlight', false)
+                ->where('media_type', 'IMAGE')
+                ->latest('published_at')
+                ->orderByDesc('id')
+                ->take(12)
+                ->get(),
             'videos' => SocialPost::query()
                 ->where('is_highlight', false)
                 ->whereIn('media_type', ['VIDEO', 'REELS'])
                 ->latest('published_at')
                 ->orderByDesc('id')
-                ->take(12)
+                ->take(30)
                 ->get(),
             'highlights' => SocialPost::query()
                 ->where('is_highlight', true)

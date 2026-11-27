@@ -21,6 +21,20 @@ class InstagramVideoSeeder extends Seeder
             'https://www.instagram.com/p/DNafGoSJjPt/',
             'https://www.instagram.com/p/DNruAcjUpAv/',
             'https://www.instagram.com/p/DMRnJfnRiv9/',
+            'https://www.instagram.com/p/DQWVePqib6p/',
+            'https://www.instagram.com/p/DQMUotsiVG-/',
+            'https://www.instagram.com/p/DOAzxMnEvHU/',
+            'https://www.instagram.com/p/DNUm-E2Rohp/',
+            'https://www.instagram.com/p/DNRvReSTNv-/',
+            'https://www.instagram.com/p/DMlQ95YTwrI/',
+            'https://www.instagram.com/p/DJYogEuxPjb/',
+            'https://www.instagram.com/p/DF8Z-2kzhvg/',
+            'https://www.instagram.com/p/DHVUxh3RH49/',
+            'https://www.instagram.com/p/DF4MEK4yaJc/',
+            'https://www.instagram.com/p/DFt34feyMT6/',
+            'https://www.instagram.com/p/DEokPO_yMy_/',
+            'https://www.instagram.com/p/DCwQfWGyvWP/',
+            'https://www.instagram.com/p/DDY45NXS4JP/',
         ];
 
         foreach (array_reverse($links) as $link) {

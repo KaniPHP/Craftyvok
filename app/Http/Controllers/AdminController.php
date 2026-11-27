@@ -7,6 +7,7 @@ use App\Models\Gift;
 use App\Models\Order;
 use App\Models\SocialPost;
 use App\Models\User;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -148,7 +149,33 @@ class AdminController extends Controller
             'category' => ['required', 'in:love,birthday,occasions,relationship,corporate,greetings'],
             'description' => ['nullable', 'string', 'max:2000'],
             'price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
-            'image_url' => ['nullable', 'url', 'max:2048'],
+            'image_url' => [
+                'nullable',
+                'string',
+                'max:2048',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! is_string($value) || $value === '') {
+                        return;
+                    }
+
+                    $isLocalImage = preg_match('/\A\/img\/[A-Za-z0-9._() %\-]+\z/', $value) === 1;
+                    if ($isLocalImage) {
+                        $localPath = rawurldecode(ltrim($value, '/'));
+
+                        if (! str_contains($localPath, '..') && is_file(public_path($localPath))) {
+                            return;
+                        }
+                    }
+
+                    $scheme = parse_url($value, PHP_URL_SCHEME);
+                    $isHttpUrl = filter_var($value, FILTER_VALIDATE_URL) !== false
+                        && in_array($scheme, ['http', 'https'], true);
+
+                    if (! $isHttpUrl) {
+                        $fail('The image must be an HTTP(S) URL or an existing image path under /img/.');
+                    }
+                },
+            ],
         ]);
     }
 }

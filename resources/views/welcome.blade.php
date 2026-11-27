@@ -73,7 +73,14 @@
       </div>
       <div class="hero-art">
         <div class="hero-image-wrap">
-          <img src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&amp;fit=crop&amp;w=1100&amp;q=85" alt="A bright pink gift box wrapped with a golden ribbon" fetchpriority="high">
+          @if($portfolioPhotos->isNotEmpty())
+            <img src="{{ $portfolioPhotos->first()->image_url }}" alt="{{ $portfolioPhotos->first()->name }}" fetchpriority="high">
+          @else
+            <div class="hero-gift-art" role="img" aria-label="A colourful Craftyvok gift illustration">
+              <span aria-hidden="true">🎁</span>
+              <strong>Thoughtful<br>gifting</strong>
+            </div>
+          @endif
           <div class="image-sticker"><span>made with</span><strong>♥</strong><span>for you</span></div>
         </div>
         <div class="floating-note"><span class="note-icon" aria-hidden="true">✳</span><span>A little extra<br><strong>thought goes a long way</strong></span></div>
@@ -120,7 +127,11 @@
           @forelse($giftGroups->get($key, collect()) as $gift)
             <article class="category-card collection-card {{ $category['card_class'] }}">
               <div class="category-image">
-                <img src="{{ $gift->image_url ?: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=760&q=80' }}" alt="{{ $gift->name }}" loading="lazy">
+                @if($gift->image_url)
+                  <img src="{{ $gift->image_url }}" alt="{{ $gift->name }}" loading="lazy">
+                @else
+                  <div class="product-art" role="img" aria-label="Gift photo coming soon for {{ $gift->name }}"><span aria-hidden="true">🎁</span><span>Craftyvok</span></div>
+                @endif
                 <span class="category-number">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
               </div>
               <div class="category-info"><div><h3>{{ $gift->name }}</h3><p>{{ $gift->description ?: 'Thoughtfully made for you' }}</p></div></div>
@@ -136,9 +147,39 @@
 
     <section class="social-section" id="videos">
       <div class="section-heading">
-        <div><p class="eyebrow"><span class="eyebrow-line"></span> A LITTLE DOSE OF HAPPY</p><h2>New videos &amp; highlights</h2></div>
+        <div><p class="eyebrow"><span class="eyebrow-line"></span> A LITTLE DOSE OF HAPPY</p><h2>From Craftyvok on Instagram</h2></div>
         <a class="text-link" href="{{ $instagramProfile }}" target="_blank" rel="noopener noreferrer">See all on Instagram <span aria-hidden="true">↗</span></a>
       </div>
+      @if($portfolioPhotos->isNotEmpty())
+        <div class="media-subheading"><p class="eyebrow"><span class="eyebrow-line"></span> MADE BY CRAFTYVOK</p><h3>Our creations</h3></div>
+        <div class="craftyvok-photo-grid">
+          @foreach($portfolioPhotos as $photo)
+            <figure class="craftyvok-photo-card">
+              <img src="{{ $photo->image_url }}" alt="{{ $photo->name }}" loading="lazy">
+              <figcaption>{{ $photo->name }}</figcaption>
+            </figure>
+          @endforeach
+        </div>
+      @endif
+      @if($photos->isNotEmpty())
+        <div class="media-subheading instagram-photo-heading"><p class="eyebrow"><span class="eyebrow-line"></span> MORE GIFT MOMENTS</p><h3>Recent Instagram photos</h3></div>
+        <div class="social-grid instagram-photo-grid">
+          @foreach($photos as $photo)
+            <article class="social-card">
+              <div class="social-embed-wrap">
+                @if($photo->embed_url)
+                  <iframe class="instagram-embed" src="{{ $photo->embed_url }}" title="Craftyvok Instagram photo" loading="lazy" scrolling="no" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" allowfullscreen></iframe>
+                @else
+                  <a class="social-placeholder" href="{{ $photo->permalink ?: $instagramProfile }}" target="_blank" rel="noopener noreferrer">View photo on Instagram ↗</a>
+                @endif
+              </div>
+              <p class="social-label">INSTAGRAM PHOTO</p>
+              <a class="social-caption" href="{{ $photo->permalink ?: $instagramProfile }}" target="_blank" rel="noopener noreferrer">View this post on Instagram <span class="social-watch-link">Open post ↗</span></a>
+            </article>
+          @endforeach
+        </div>
+      @endif
+      <div class="media-subheading video-subheading"><p class="eyebrow"><span class="eyebrow-line"></span> WATCH OUR LATEST</p><h3>Videos &amp; Reels</h3></div>
       <div class="social-grid">
         @forelse($videos as $video)
           <article class="social-card">
@@ -173,7 +214,13 @@
 
     <section class="story-section" id="about">
       <div class="story-photo">
-        <img src="https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&amp;fit=crop&amp;w=1000&amp;q=85" alt="A thoughtfully assembled gift with a personal touch" loading="lazy">
+        @if($portfolioPhotos->count() > 1)
+          <img src="{{ $portfolioPhotos->get(1)->image_url }}" alt="{{ $portfolioPhotos->get(1)->name }}" loading="lazy">
+        @else
+          <div class="story-gift-art" role="img" aria-label="Craftyvok thoughtful gifting illustration">
+            <div class="story-art-card"><span aria-hidden="true">💝</span><strong>Made personal.<br>Sent with love.</strong></div>
+          </div>
+        @endif
         <div class="story-stamp"><span>THOUGHTFUL</span><strong>by<br>nature</strong><span>ALWAYS</span></div>
       </div>
       <div class="story-copy">
@@ -207,7 +254,13 @@
         <div class="corporate-squiggle" aria-hidden="true">〰</div>
       </div>
       <div class="corporate-image">
-        <img src="https://images.unsplash.com/photo-1512909006721-3d6018887383?auto=format&amp;fit=crop&amp;w=1000&amp;q=85" alt="A collection of gifts ready to bring a team together" loading="lazy">
+        @if($portfolioPhotos->count() > 2)
+          <img src="{{ $portfolioPhotos->get(2)->image_url }}" alt="{{ $portfolioPhotos->get(2)->name }}" loading="lazy">
+        @else
+          <div class="corporate-gift-art" role="img" aria-label="Corporate gifting illustration">
+            <div class="corporate-gift-stack" aria-hidden="true"><span>🎁</span><span>🎁</span><span>🎁</span></div>
+          </div>
+        @endif
         <span class="corporate-label">A little appreciation<br>goes a long way <b>♥</b></span>
       </div>
     </section>
@@ -224,13 +277,37 @@
   </main>
 
   <section class="review-section" aria-labelledby="review-title">
-    <h2 id="review-title">Loved your Craftyvok gift?</h2>
-    <p>Your honest review helps someone find their next favourite gift.</p>
-    @if($googleReviewUrl)
-      <a class="button button-outline" href="{{ $googleReviewUrl }}" target="_blank" rel="noopener noreferrer">Leave a Google review <span aria-hidden="true">↗</span></a>
-    @else
-      <p class="review-note">Our Google review link is being connected. Please check back soon.</p>
-    @endif
+    <h2 id="review-title">Sample Google-style reviews <span lang="ta">· Google மதிப்புரைகள்</span></h2>
+    <p class="review-demo-disclaimer">Demo examples only — these are not actual customer testimonials or Google reviews. <span lang="ta">இவை மாதிரி உரைகள் மட்டுமே; உண்மையான வாடிக்கையாளர் மதிப்புரைகள் அல்ல.</span></p>
+    <div class="sample-reviews">
+      <article class="sample-review">
+        <div class="sample-review-meta"><span class="sample-review-stars" aria-label="Example rating: 5 out of 5 stars"><span aria-hidden="true">★★★★★</span></span><span class="sample-review-tag">Sample review</span></div>
+        <blockquote>“The personalised hamper was beautifully packed and arrived right on time. They loved every detail!”</blockquote>
+        <p class="sample-review-tamil" lang="ta">பரிசுக் கூடை அழகாக பேக் செய்து, சொன்ன நேரத்திற்கே வந்தது. ஒவ்வொரு விவரமும் மிகவும் பிடித்திருந்தது!</p>
+        <p class="sample-review-author">Sample customer</p>
+      </article>
+      <article class="sample-review">
+        <div class="sample-review-meta"><span class="sample-review-stars" aria-label="Example rating: 5 out of 5 stars"><span aria-hidden="true">★★★★★</span></span><span class="sample-review-tag">Sample review</span></div>
+        <blockquote>“Easy to customise, quick to respond, and the gift looked even better in person.”</blockquote>
+        <p class="sample-review-tamil" lang="ta">விருப்பப்படி மாற்றிக் கொடுக்கிறார்கள்; விரைவாகப் பதிலும் சொல்கிறார்கள். பரிசு நேரில் இன்னும் அழகாக இருந்தது.</p>
+        <p class="sample-review-author">Sample customer</p>
+      </article>
+      <article class="sample-review">
+        <div class="sample-review-meta"><span class="sample-review-stars" aria-label="Example rating: 5 out of 5 stars"><span aria-hidden="true">★★★★★</span></span><span class="sample-review-tag">Sample review</span></div>
+        <blockquote>“Our corporate thank-you boxes were a hit with the whole team. We’ll order again.”</blockquote>
+        <p class="sample-review-tamil" lang="ta">எங்கள் குழுவுக்காக ஆர்டர் செய்த கார்ப்பரேட் பரிசுப் பெட்டிகள் அனைவருக்கும் மிகவும் பிடித்திருந்தன. மீண்டும் ஆர்டர் செய்வோம்.</p>
+        <p class="sample-review-author">Sample customer</p>
+      </article>
+    </div>
+    <div class="review-cta">
+      <h3>Loved your Craftyvok gift?</h3>
+      <p>Your honest review helps someone find their next favourite gift.</p>
+      @if($googleReviewUrl)
+        <a class="button button-outline" href="{{ $googleReviewUrl }}" target="_blank" rel="noopener noreferrer">Leave a Google review <span lang="ta">/ Google-ல் மதிப்புரை எழுதுங்கள்</span> <span aria-hidden="true">↗</span></a>
+      @else
+        <p class="review-note">Our Google review link is being connected. Please check back soon.</p>
+      @endif
+    </div>
   </section>
 
   <footer class="site-footer">
@@ -242,6 +319,12 @@
         </a>
         <p>Thoughtful gifts made to celebrate every special moment, relationship and occasion.</p>
         <p class="footer-experience">Personalised gifting with a personal touch — for over 10 years.</p>
+        <address class="footer-address">
+          <a href="https://www.google.com/maps/place/Craftyvok/@11.0181785,76.9648067,17z/data=!3m1!4b1!4m6!3m5!1s0x3ba8582efb603401:0xbab6bdc296987424!8m2!3d11.0181785!4d76.9673816!16s%2Fg%2F11c58vbk02?hl=en-IN&amp;entry=ttu&amp;g_ep=EgoyMDI2MTEyMy4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener noreferrer">
+            203, Ground Floor, 5th Street, Cross Cut Road, Gandhipuram, Coimbatore, Tamil Nadu 641012
+            <span>View on Google Maps <span aria-hidden="true">↗</span></span>
+          </a>
+        </address>
       </div>
       <nav class="footer-column" aria-label="Quick links">
         <h2>Quick Links</h2>

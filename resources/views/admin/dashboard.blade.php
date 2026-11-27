@@ -59,7 +59,7 @@
           <label>Menu category<select name="category" required><option value="love">Love</option><option value="birthday">Birthday Gifts</option><option value="occasions" selected>Occasions</option><option value="relationship">Relationship</option><option value="corporate">Corporate</option><option value="greetings">Greetings</option></select></label>
           <label>Price (₹)<input name="price" type="number" min="0" step="0.01" placeholder="Leave blank to quote in chat"></label>
           <label class="admin-wide">Description<textarea name="description" rows="2" maxlength="2000"></textarea></label>
-          <label class="admin-wide">Image URL<input name="image_url" type="url" placeholder="https://…"></label>
+          <label class="admin-wide">Image URL or local path<input name="image_url" type="text" inputmode="url" placeholder="https://… or /img/photo.jpg"></label>
           <label class="admin-checkbox"><input type="checkbox" name="is_active" value="1" checked> Show on website</label>
         </div>
         <button class="button button-primary" type="submit">Add gift</button>
@@ -73,7 +73,7 @@
               <label>Menu category<select name="category" required>@foreach(['love' => 'Love', 'birthday' => 'Birthday Gifts', 'occasions' => 'Occasions', 'relationship' => 'Relationship', 'corporate' => 'Corporate', 'greetings' => 'Greetings'] as $value => $label)<option value="{{ $value }}" @selected($gift->category === $value)>{{ $label }}</option>@endforeach</select></label>
               <label>Price (₹)<input name="price" type="number" min="0" step="0.01" value="{{ $gift->price }}"></label>
               <label class="admin-wide">Description<textarea name="description" rows="2" maxlength="2000">{{ $gift->description }}</textarea></label>
-              <label class="admin-wide">Image URL<input name="image_url" type="url" value="{{ $gift->image_url }}"></label>
+              <label class="admin-wide">Image URL or local path<input name="image_url" type="text" inputmode="url" value="{{ $gift->image_url }}"></label>
               <label class="admin-checkbox"><input type="checkbox" name="is_active" value="1" @checked($gift->is_active)> Show on website</label>
               <div class="admin-gift-actions"><button type="submit">Save changes</button></div>
             </form>

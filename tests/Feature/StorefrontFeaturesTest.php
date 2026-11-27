@@ -8,8 +8,9 @@ use App\Models\Order;
 use App\Models\SocialPost;
 use App\Models\User;
 use App\Services\InstagramFeedService;
-use Database\Seeders\InstagramVideoSeeder;
 use Database\Seeders\DemoGiftSeeder;
+use Database\Seeders\InstagramPhotoSeeder;
+use Database\Seeders\InstagramVideoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -43,7 +44,7 @@ class StorefrontFeaturesTest extends TestCase
             ->assertSee('Custom gift box')
             ->assertSee('Ask about this gift')
             ->assertSee('A little gift inspiration')
-            ->assertSee('New videos')
+            ->assertSee('Videos & Reels')
             ->assertSee('id="collection-love"', false)
             ->assertSee('id="collection-birthday"', false)
             ->assertSee('id="collection-corporate"', false)
@@ -51,7 +52,14 @@ class StorefrontFeaturesTest extends TestCase
             ->assertSee('Birthday gifts')
             ->assertSee('My Orders')
             ->assertSee('aria-label="Search gifts"', false)
-            ->assertSee('https://g.page/r/example/review');
+            ->assertSee('Sample Google-style reviews')
+            ->assertSee('not actual customer testimonials or Google reviews')
+            ->assertSee('The personalised hamper was beautifully packed')
+            ->assertSee('பரிசுக் கூடை அழகாக பேக் செய்து')
+            ->assertSee('Google-ல் மதிப்புரை எழுதுங்கள்')
+            ->assertSee('https://g.page/r/example/review')
+            ->assertSee('203, Ground Floor, 5th Street, Cross Cut Road, Gandhipuram, Coimbatore, Tamil Nadu 641012')
+            ->assertSee('View on Google Maps');
     }
 
     public function test_guest_can_chat_about_a_gift_and_receive_an_admin_reply(): void
@@ -113,6 +121,31 @@ class StorefrontFeaturesTest extends TestCase
             'price' => '499.00',
             'is_active' => 1,
         ]);
+
+        $this->post('/admin/gifts', [
+            'name' => 'Custom name board',
+            'category' => 'occasions',
+            'image_url' => '/img/WhatsApp%20Image%202026-09-09%20at%2011.44.52%20AM.jpeg',
+            'is_active' => '1',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('gifts', [
+            'name' => 'Custom name board',
+            'image_url' => '/img/WhatsApp%20Image%202026-09-09%20at%2011.44.52%20AM.jpeg',
+        ]);
+    }
+
+    public function test_admin_rejects_image_paths_outside_the_local_image_folder(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->post('/admin/gifts', [
+                'name' => 'Invalid image item',
+                'category' => 'occasions',
+                'image_url' => 'javascript:alert(1)',
+            ])
+            ->assertSessionHasErrors([
+                'image_url' => 'The image must be an HTTP(S) URL or an existing image path under /img/.',
+            ]);
     }
 
     public function test_customer_can_register_and_only_sees_their_own_orders(): void
@@ -260,16 +293,21 @@ class StorefrontFeaturesTest extends TestCase
         ]);
     }
 
-    public function test_supplied_instagram_posts_are_embedded_in_the_video_section(): void
+    public function test_supplied_instagram_photos_and_videos_are_embedded_in_their_sections(): void
     {
         $this->seed(InstagramVideoSeeder::class);
+        $this->seed(InstagramPhotoSeeder::class);
 
-        $this->assertSame(11, SocialPost::where('media_type', 'VIDEO')->count());
+        $this->assertSame(25, SocialPost::where('media_type', 'VIDEO')->count());
+        $this->assertSame(7, SocialPost::where('media_type', 'IMAGE')->count());
 
         $this->get('/')
             ->assertOk()
+            ->assertSee('Recent Instagram photos')
+            ->assertSee('https://www.instagram.com/p/Dfr5gUzEi7a/embed/', false)
             ->assertSee('https://www.instagram.com/p/DGkQe7Yxpj3/embed/', false)
-            ->assertSee('https://www.instagram.com/p/DMRnJfnRiv9/embed/', false);
+            ->assertSee('https://www.instagram.com/p/DMRnJfnRiv9/embed/', false)
+            ->assertSee('https://www.instagram.com/p/DDY45NXS4JP/embed/', false);
     }
 
     public function test_demo_gifts_are_seeded_into_all_menu_collections(): void
@@ -278,9 +316,16 @@ class StorefrontFeaturesTest extends TestCase
 
         $this->assertSame(18, Gift::where('is_active', true)->count());
         $this->assertSame(6, Gift::query()->distinct()->count('category'));
+        $this->assertSame(13, Gift::query()->distinct()->count('image_url'));
+        $this->assertDatabaseHas('gifts', [
+            'name' => 'Love Note Gift Box',
+            'image_url' => '/img/WhatsApp%20Image%202026-09-09%20at%2011.45.07%20AM%20%284%29.jpeg',
+        ]);
 
         $this->get('/')
             ->assertOk()
+            ->assertSee('Our creations')
+            ->assertSee('/img/WhatsApp%20Image', false)
             ->assertSee('Love Note Gift Box')
             ->assertSee('Birthday Surprise Box')
             ->assertSee('New Home Gift Set')

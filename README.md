@@ -1,6 +1,6 @@
 # Craftyvok
 
-Laravel storefront for personalised gifts, Instagram videos/highlights, guest gift enquiries, and Google review links.
+Laravel storefront for personalised gifts, Instagram photos/videos/highlights, guest gift enquiries, and Google review links.
 
 ## Run locally
 
@@ -13,7 +13,7 @@ php artisan serve
 
 Open `http://127.0.0.1:8000`.
 
-To load the sample gift catalogue for the Love, Birthday, Occasions, Relationship, Corporate, and Greetings menus, run:
+To load the sample gift catalogue and the original product photos from `public/img` for the Love, Birthday, Occasions, Relationship, Corporate, and Greetings menus, run:
 
 ```powershell
 php artisan db:seed --class=DemoGiftSeeder
@@ -41,9 +41,10 @@ php artisan craftyvok:sync-instagram
 
 Videos/Reels and story highlights are synced to the website. Scheduled sync is every 30 minutes; keep Laravel's scheduler running locally with `php artisan schedule:work` or configure Laravel's scheduler on the production server.
 
-To load the Craftyvok Instagram post links supplied for the video section, run:
+To load the Craftyvok Instagram photos and video posts supplied for the storefront, run:
 
 ```powershell
+php artisan db:seed --class=InstagramPhotoSeeder
 php artisan db:seed --class=InstagramVideoSeeder
 ```
 
