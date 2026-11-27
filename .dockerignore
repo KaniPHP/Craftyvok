@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+.phpunit.result.cache
+node_modules
+vendor
+tests
+storage
+public/storage
+public/hot
+public/build
+database/*.sqlite
