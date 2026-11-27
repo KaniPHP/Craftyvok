@@ -44,6 +44,7 @@ class StorefrontFeaturesTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Custom gift box')
+            ->assertSee('img/craftyvok-award-gift.png')
             ->assertSee('Ask about this gift')
             ->assertSee('A little gift inspiration')
             ->assertSee('Videos & Reels')

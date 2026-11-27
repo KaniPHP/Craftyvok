@@ -73,14 +73,7 @@
       </div>
       <div class="hero-art">
         <div class="hero-image-wrap">
-          @if($portfolioPhotos->isNotEmpty())
-            <img src="{{ $portfolioPhotos->first()->image_url }}" alt="{{ $portfolioPhotos->first()->name }}" fetchpriority="high">
-          @else
-            <div class="hero-gift-art" role="img" aria-label="A colourful Craftyvok gift illustration">
-              <span aria-hidden="true">🎁</span>
-              <strong>Thoughtful<br>gifting</strong>
-            </div>
-          @endif
+          <img src="{{ asset('img/craftyvok-award-gift.png') }}" alt="Personalised award gift celebrating a milestone" fetchpriority="high">
           <div class="image-sticker"><span>made with</span><strong>♥</strong><span>for you</span></div>
         </div>
         <div class="floating-note"><span class="note-icon" aria-hidden="true">✳</span><span>A little extra<br><strong>thought goes a long way</strong></span></div>
