@@ -17,11 +17,29 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class StorefrontFeaturesTest extends TestCase
 {
     use RefreshDatabase;
+
+    #[DataProvider('authFormRoutes')]
+    public function test_auth_forms_use_https_action_behind_render_proxy(string $path): void
+    {
+        $this->get('http://craftyvok.onrender.com'.$path, [
+            'X-Forwarded-Proto' => 'https',
+        ])
+            ->assertOk()
+            ->assertSee('action="https://craftyvok.onrender.com'.$path.'"', false);
+    }
+
+    public static function authFormRoutes(): iterable
+    {
+        yield 'shopper login' => ['/login'];
+        yield 'shopper registration' => ['/register'];
+        yield 'admin login' => ['/admin/login'];
+    }
 
     public function test_homepage_renders_gifts_and_google_review_link(): void
     {
